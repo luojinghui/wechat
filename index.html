@@ -1,39 +1,249 @@
 <!doctype html>
 <html>
 <head>
-    <title>Socket.IO chat</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="renderer" content="webkit|ie-comp|ie-stand">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Web App">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font: 13px Helvetica, Arial; }
-        form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-        form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-        form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
-        #messages { list-style-type: none; margin: 0; padding: 0; }
-        #messages li { padding: 5px 10px; }
-        #messages li:nth-child(odd) { background: #eee; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font: 13px Helvetica, Arial;
+        }
+
+        form {
+            padding: 1px;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+        }
+
+        form input {
+            outline: none;
+            padding: 0 10px;
+            border: 1px solid #ddd;
+            flex: 1;
+        }
+
+        form button {
+            width: 50px;
+            background: rgb(130, 224, 255);
+            border: none;
+            padding: 10px;
+            outline: none;
+        }
+
+        #messages {
+            list-style-type: none;
+            margin: 40px 0;
+            padding: 0;
+            overflow: auto;
+        }
+
+        #messages li {
+            padding: 10px 10px;
+        }
+
+        #messages li:nth-child(odd) {
+            background: #eee;
+        }
+
+        .model {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .box {
+            width: 80%;
+            max-width: 300px;
+            height: auto;
+            padding: 15px;
+            background-color: #fff;
+        }
+
+        .box input {
+            width: 100%;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            border-radius: 2px;
+            height: 30px;
+            padding: 10px;
+            outline: none;
+        }
+
+        .box .btn {
+            display: inline-block;
+            width: 100px;
+            height: 30px;
+            background-color: lightskyblue;
+            color: #fff;
+            box-shadow: none;
+            outline: none;
+            text-align: center;
+            line-height: 30px;
+            border-radius: 2px;
+        }
+
+        .box .btn:active {
+            background-color: deepskyblue;
+        }
+
+        .center {
+            text-align: center;
+            margin-top: 14px;
+        }
+
+        .username {
+            background-color: lavender;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            padding: 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .li {
+            display: flex;
+        }
+
+        .li .user {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .clear {
+            width: 30px;
+        }
     </style>
+    <title>Socket.IO chat</title>
 </head>
 <body>
+<div class="username">
+    <span class='count'></span>
+    <span class='name'></span>
+    <span class="clear">设置</span>
+</div>
 <ul id="messages"></ul>
 <form action="">
-    <input id="m" autocomplete="off" /><button>Send</button>
+    <input id="m" autocomplete="off"/>
+    <button>Send</button>
 </form>
+
+<div class="model">
+    <div class="box">
+        <div>
+            <input type="text" id="username" placeholder="输入你的昵称">
+        </div>
+        <div class="center">
+            <div class="btn onSubmit">保存昵称</div>
+        </div>
+    </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+<script type="text/javascript" src="http://pv.sohu.com/cityjson?ie=utf-8"></script>
 <script>
   $(function () {
+    var userName = "";
     var socket = io();
-    $('form').submit(function(){
-      socket.emit('chat message', $('#m').val());
-      $('#m').val('');
+
+    if (localStorage) {
+      userName = localStorage.getItem("username");
+
+      socket.emit('get data', {
+        ip: returnCitySN['cip'],
+        city: returnCitySN['cname'],
+        name: userName
+      });
+
+      if (userName && userName.length > 1) {
+        $(".name").text("Wechat：" + userName);
+      } else {
+        $(".model").css("display", "flex");
+      }
+    } else {
+      alert("浏览器版本太低了，请升级后访问");
+    }
+
+    $(".clear").on("click", function() {
+      $(".model").css("display", "flex");
+    });
+
+    $(".onSubmit").on('click', function () {
+      var name = $("#username").val();
+
+      if (name.length >= 1) {
+        localStorage.setItem("username", name);
+
+        userName = name;
+        $(".name").text("Wechat：" + name);
+        $(".model").hide();
+      }
+    });
+
+    $('form').submit(function () {
+      var message = $('#m').val();
+
+      if (message.length >= 1) {
+        socket.emit('chat message', {
+          name: userName,
+          message: message,
+          ip: returnCitySN['cip'],
+          city: returnCitySN['cname'],
+        });
+        $('#m').val('');
+      }
+
       return false;
     });
 
-    socket.on('chat message', function(msg) {
+    socket.on('chat message', function (msg) {
       console.log(msg);
-      $('#messages').append($('<li>').text(msg));
-    })
+      var li = '<li class="li"><span class="user">' + msg.name + ':</span>' + msg.message + '</li>';
+      $('#messages').append(li);
+      $(window).scrollTop($('#messages').outerHeight());
+    });
+
+    socket.on('get data', function (msg) {
+      msg.forEach(function (val, index) {
+        if (index >= 30) {
+          return null;
+        }
+
+        var l = '<li class="li"><span class="user">' + val.name + ':</span>' + val.message + '</li>';
+        $('#messages').append(l);
+      });
+
+      $(window).scrollTop($('#messages').outerHeight());
+    });
+
+    socket.on('count', function (msg) {
+      $(".count").text("人数：" + msg);
+    });
   });
 </script>
 </body>
