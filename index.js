@@ -3,12 +3,21 @@
  * @date 2018/5/16
  * @Description:
  */
-var app = require('express')();
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
 var fs = require('fs');
+var https = require('https');
+var express = require('express');
+var app = express();
+
+var options = {
+  key: fs.readFileSync('./www.luojh.com.key'),
+  cert: fs.readFileSync('./www.luojh.com.pem')
+};
+var server = https.createServer(options, app);
+var io = require('socket.io')(server);
+
 var path = './history.json';
 var count = [];
+app.use(express.static('public'));
 
 app.get('/', (req, res) => {
 	res.sendFile(__dirname + '/index.html');
@@ -21,11 +30,24 @@ io.on('connection', (socket) => {
 
 	socket.on('chat message', function(msg) {
 		console.log('message: ' + JSON.stringify(msg));
-
+		
 		let result = JSON.parse(fs.readFileSync(path)) || [];
-		if (result.length > 50) {
-			result.length = 50;
+		let copyResult = result;
+		if (copyResult.length > 100) {
+			copyResult.length = 100;
 		}
+
+		msg.id = socket.id;
+		msg.time = new Date() + "";
+
+		if(!msg.avathor) {
+			let randomNum = parseInt(Math.random() * 8);
+			
+			msg.avathor = `/img/${randomNum}.png`;
+		} else {
+			msg.avathor = msg.avathor;
+		}
+
 		result.push(msg);
 
 		fs.writeFile(path, JSON.stringify(result), function(err) {
@@ -37,7 +59,6 @@ io.on('connection', (socket) => {
 
 	socket.on('get data', function(data) {
 		console.log('A user coming: ', JSON.stringify(data));
-
 		let result = JSON.parse(fs.readFileSync(path));
 
 		io.to(socket.id).emit('get data', result);
@@ -60,6 +81,6 @@ function del(count, id) {
 	return -1;
 }
 
-http.listen(9999, () => {
-	console.log('listening on *:9999');
+server.listen(3999, () => {
+	console.log('listening on *:3999');
 });

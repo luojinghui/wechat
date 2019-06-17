@@ -9,138 +9,11 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font: 13px Helvetica, Arial;
-        }
-
-        form {
-            padding: 1px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            display: flex;
-        }
-
-        form input {
-            outline: none;
-            padding: 0 10px;
-            border: 1px solid #ddd;
-            flex: 1;
-        }
-
-        form button {
-            width: 50px;
-            background: rgb(130, 224, 255);
-            border: none;
-            padding: 10px;
-            outline: none;
-        }
-
-        #messages {
-            list-style-type: none;
-            margin: 40px 0;
-            padding: 0;
-            overflow: auto;
-        }
-
-        #messages li {
-            padding: 10px 10px;
-        }
-
-        #messages li:nth-child(odd) {
-            background: #eee;
-        }
-
-        .model {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .box {
-            width: 80%;
-            max-width: 300px;
-            height: auto;
-            padding: 15px;
-            background-color: #fff;
-        }
-
-        .box input {
-            width: 100%;
-            margin: 0 auto;
-            border: 1px solid #ddd;
-            border-radius: 2px;
-            height: 30px;
-            padding: 10px;
-            outline: none;
-        }
-
-        .box .btn {
-            display: inline-block;
-            width: 100px;
-            height: 30px;
-            background-color: lightskyblue;
-            color: #fff;
-            box-shadow: none;
-            outline: none;
-            text-align: center;
-            line-height: 30px;
-            border-radius: 2px;
-        }
-
-        .box .btn:active {
-            background-color: deepskyblue;
-        }
-
-        .center {
-            text-align: center;
-            margin-top: 14px;
-        }
-
-        .username {
-            background-color: lavender;
-            text-align: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 40px;
-            padding: 0 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .li {
-            display: flex;
-        }
-
-        .li .user {
-            font-weight: bold;
-            margin-right: 10px;
-        }
-        .clear {
-            width: 30px;
-        }
-    </style>
-    <title>Socket.IO chat</title>
+    <link rel="stylesheet" href="/css/index.css">
+    <title>云聊天室</title>
 </head>
 <body>
+    <div id="can"></div>
 <div class="username">
     <span class='count'></span>
     <span class='name'></span>
@@ -148,6 +21,10 @@
 </div>
 <ul id="messages"></ul>
 <form action="">
+    <div class="input-img">
+        <div class="hide-btn">+</div>
+        <input type="file" id="inputImg" accept="image/*" />
+    </div>
     <input id="m" autocomplete="off"/>
     <button>Send</button>
 </form>
@@ -159,29 +36,58 @@
         </div>
         <div class="center">
             <div class="btn onSubmit">保存昵称</div>
+            <span class="close">关闭</span>
         </div>
     </div>
 </div>
 
+<div class="imgModel">
+    <div class="align-center">
+        <div class="preview-box">
+            <img src="" class="preview-img">
+        </div>
+    </div>
+</div>
+
+<div class="loading">
+        <div class="align-center">
+                <div class="sampleContainer">
+                        <div class="loader">
+                            <span class="dot dot_1"></span>
+                            <span class="dot dot_2"></span>
+                            <span class="dot dot_3"></span>
+                            <span class="dot dot_4"></span>
+                        </div>
+                    </div>
+        </div>
+</div>
+
+<script src="/lib/jquery.min.js"></script>
+<script src="/lib/j-temp.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
-<script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-<script type="text/javascript" src="http://pv.sohu.com/cityjson?ie=utf-8"></script>
 <script>
   $(function () {
-    var userName = "";
-    var socket = io();
+    var user = "{}";
+    var socket = io("wss://localhost:3999/");
+    var message = '<li class="li"><div class="user"><img src="${avathor}"></div><div class="message-li"><span class="user-name" data-name="${name}">${name}：</span><span class="user-message">${message}</span></div></li>';                                
+    var messageImage = '<li class="li"><div class="user"><img src="${avathor}"></div><div class="message-li"><span class="user-name" data-name="${name}">${name}：</span><img onclick="onClickImg(this)" class="user-messageImage" src="${message}"></img></div></li>';                                
+    $.template( "messageLi", message );
+    $.template( "messageLiImage", messageImage );
 
     if (localStorage) {
-      userName = localStorage.getItem("username");
+      user = localStorage.getItem("user") || "{}";
+      user = JSON.parse(user);
 
       socket.emit('get data', {
-        ip: returnCitySN['cip'],
-        city: returnCitySN['cname'],
-        name: userName
+        ip: '',
+        city: '',
+        name: user.name,
+        id: user.id || "",
+        avathor: user.avathor || ""
       });
 
-      if (userName && userName.length > 1) {
-        $(".name").text("Wechat：" + userName);
+      if (user && user.name) {
+        $(".name").text("聊天室：" + user.name);
       } else {
         $(".model").css("display", "flex");
       }
@@ -189,31 +95,116 @@
       alert("浏览器版本太低了，请升级后访问");
     }
 
-    $(".clear").on("click", function() {
-      $(".model").css("display", "flex");
-    });
+    $("#inputImg").on('change', function(file) {
+        var eleFile = document.querySelector('#file');
 
+        // 压缩图片需要的一些元素和对象
+        var reader = new FileReader(), img = new Image();
+
+        // 选择的文件对象
+        var file = null;
+
+        // 缩放图片需要的canvas
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        
+        // base64地址图片加载完毕后
+        img.onload = function () {
+            // 图片原始尺寸
+            var originWidth = this.width;
+            var originHeight = this.height;
+            // 最大尺寸限制
+            var maxWidth = 300, maxHeight = 300;
+            // 目标尺寸
+            var targetWidth = originWidth, targetHeight = originHeight;
+            // 图片尺寸超过300x300的限制
+            if (originWidth > maxWidth || originHeight > maxHeight) {
+                if (originWidth / originHeight > maxWidth / maxHeight) {
+                    // 更宽，按照宽度限定尺寸
+                    targetWidth = maxWidth;
+                    targetHeight = Math.round(maxWidth * (originHeight / originWidth));
+                } else {
+                    targetHeight = maxHeight;
+                    targetWidth = Math.round(maxHeight * (originWidth / originHeight));
+                }
+            }
+                
+            // canvas对图片进行缩放
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            // 清除画布
+            context.clearRect(0, 0, targetWidth, targetHeight);
+            // 图片压缩
+            context.drawImage(img, 0, 0, targetWidth, targetHeight);
+            // canvas转为blob并上传
+            var result = canvas.toDataURL('image/jpg', 0.6);
+            
+            socket.emit('chat message', {
+                name: user.name,
+                type: "image",
+                message: result,
+                ip: '',
+                city: '',
+                id: user.id || "",
+                avathor: user.avathor || ""
+            });
+        };
+
+        // 文件base64化，以便获知图片原始尺寸
+        reader.onload = function(e) {
+            img.src = e.target.result;
+        };
+
+        file = event.target.files[0];
+        // 选择的文件是图片
+        if (file.type.indexOf("image") == 0) {
+            reader.readAsDataURL(file);    
+        }
+    })
+
+    //点击提交，设置昵称
     $(".onSubmit").on('click', function () {
       var name = $("#username").val();
 
       if (name.length >= 1) {
-        localStorage.setItem("username", name);
+        user['name'] = name;
 
-        userName = name;
-        $(".name").text("Wechat：" + name);
+        localStorage.setItem("user", JSON.stringify(user));
+        $(".name").text("聊天室：" + name);
         $(".model").hide();
       }
     });
 
+    // 显示蒙版
+    $(".clear").on("click", function() {
+      $("#username").val(user['name'] || parseInt(Math.random() * 10000));
+      $(".model").css("display", "flex");
+    });
+
+    //点击关闭蒙层
+    $(".close").on('click', function () {
+        $(".model").hide();
+    });
+
+    //发消息
     $('form').submit(function () {
       var message = $('#m').val();
 
+      if(!user['name']) {
+        user['name'] = parseInt(Math.random() * 10000);
+
+        localStorage.setItem("username", name);
+      }
+
       if (message.length >= 1) {
         socket.emit('chat message', {
-          name: userName,
+          name: user.name,
+          type: "text",
           message: message,
-          ip: returnCitySN['cip'],
-          city: returnCitySN['cname'],
+          ip: '',
+          city: '',
+          id: user.id || "",
+          avathor: user.avathor || ""
         });
         $('#m').val('');
       }
@@ -221,30 +212,59 @@
       return false;
     });
 
+    //接受push消息
     socket.on('chat message', function (msg) {
-      console.log(msg);
-      var li = '<li class="li"><span class="user">' + msg.name + ':</span>' + msg.message + '</li>';
-      $('#messages').append(li);
+      console.log("get chat message====", msg);
+      let copyUser = user;
+
+      if(!user.id && !user.avathor) {
+          user["id"] = msg.id;
+          user["avathor"] = msg.avathor
+
+          copyUser = user;
+          localStorage.setItem("user", JSON.stringify(copyUser));
+      };
+      appendMessage(msg);
+
       $(window).scrollTop($('#messages').outerHeight());
     });
 
+    function appendMessage(msg) {
+        if(msg.type === "text") {
+            $.tmpl( "messageLi", msg ).appendTo( "#messages" );
+        } else if(msg.type === "image") {
+            $.tmpl( "messageLiImage", msg ).appendTo( "#messages" );
+        }
+    }
+
+    //接受历史消息
     socket.on('get data', function (msg) {
       msg.forEach(function (val, index) {
-        if (index >= 30) {
-          return null;
-        }
-
-        var l = '<li class="li"><span class="user">' + val.name + ':</span>' + val.message + '</li>';
-        $('#messages').append(l);
+        appendMessage(val);
       });
+
+      $(".loading").fadeOut();
 
       $(window).scrollTop($('#messages').outerHeight());
     });
 
+    //实时监听在线人数
     socket.on('count', function (msg) {
       $(".count").text("人数：" + msg);
     });
+
+    $(".imgModel").on("click", function() {
+        $(".imgModel").hide();
+    })
   });
+
+  function onClickImg(e) {
+      var that = $(e);
+      var src = that.attr("src");
+
+      $(".imgModel").find(".preview-img").attr("src", src)
+      $(".imgModel").show();
+  }
 </script>
 </body>
 </html>
